@@ -75,6 +75,19 @@ This module intentionally avoids using OpenAI's paid API services for the follow
    - Visit `http://127.0.0.1:8000/examples` to see example API requests
    - Visit `http://127.0.0.1:8000/integration` to understand how an AI would use this MCP server
    - Use a tool like [Postman](https://www.postman.com/downloads/) or [curl](https://curl.se/) to make test requests to the server
+   ```bash
+    curl -X POST http://127.0.0.1:8000/execute \
+    -H "Content-Type: application/json" \
+    -d '{
+        "service": "mailchimp",
+        "command": "add_subscriber",
+        "parameters": {
+            "email": "subscriber@example.com",
+            "list_id": "LIST-789"
+        }
+    }'
+    ```
+   
 
 ### 3. Understand the Conceptual Framework (1-2 hours)
 
