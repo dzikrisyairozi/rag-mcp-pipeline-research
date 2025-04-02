@@ -49,3 +49,9 @@ temp/
 # OS specific
 .DS_Store
 Thumbs.db 
+
+# requirements.txt
+requirements.txt
+
+# output directory
+output/

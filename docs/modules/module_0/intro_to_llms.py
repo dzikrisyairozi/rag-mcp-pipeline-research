@@ -22,25 +22,50 @@ with: jupyter nbconvert --to notebook --execute intro_to_llms.py
 # Run this in your terminal:
 # pip install transformers torch sentence-transformers
 
-print("=== Setting up LLM environment using Hugging Face (Free Models) ===\n")
-
-# 2. Import the required libraries
+import os
+import sys
 import torch
+import datetime
+from pathlib import Path
 from transformers import pipeline, AutoModelForCausalLM, AutoTokenizer
 from sentence_transformers import SentenceTransformer
 import time
 
+# Create output directory if it doesn't exist
+# First, determine the project root directory
+script_path = Path(__file__).resolve()
+project_root = script_path.parent.parent.parent.parent  # Go up to project root
+output_dir = project_root / "output"
+output_dir.mkdir(exist_ok=True)
+
+# Create a timestamped output file
+timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
+output_file = output_dir / f"response_{timestamp}.txt"
+
+# Function to log output to both console and file
+def log(message, console_only=False):
+    """Print message to console and append to output file"""
+    print(message)
+    
+    if not console_only:
+        with open(output_file, "a", encoding="utf-8") as f:
+            f.write(message + "\n")
+
+# Start the script
+log("=== Setting up LLM environment using Hugging Face (Free Models) ===\n")
+log(f"Output will be saved to: {output_file}", console_only=True)
+
 # 3. Basic Interaction with an LLM
-print("Loading a small pretrained model from Hugging Face...")
-print("Note: The first time this runs, it will download the model files (may take a few minutes).")
+log("Loading a small pretrained model from Hugging Face...")
+log("Note: The first time this runs, it will download the model files (may take a few minutes).")
 
 try:
     # Using a small GPT-2 model that works on most hardware
     generator = pipeline('text-generation', model='distilgpt2')
-    print("✅ Model loaded successfully!\n")
+    log("✅ Model loaded successfully!\n")
 except Exception as e:
-    print(f"❌ Error loading model: {e}")
-    print("Please check your internet connection and try again.")
+    log(f"❌ Error loading model: {e}")
+    log("Please check your internet connection and try again.")
     exit(1)
 
 # Simple completion function using Hugging Face models
@@ -54,27 +79,27 @@ def get_completion(prompt, max_length=100):
         # Extract and return the generated text
         return result[0]['generated_text']
     except Exception as e:
-        print(f"Error generating completion: {e}")
+        log(f"Error generating completion: {e}")
         return f"Error: {str(e)}"
 
 # Test the function
 prompt = "Explain what a Large Language Model is in simple terms."
-print("=== Basic LLM Interaction ===")
-print(f"Prompt: {prompt}")
-print("Generating response (this may take a moment)...")
+log("=== Basic LLM Interaction ===")
+log(f"Prompt: {prompt}")
+log("Generating response (this may take a moment)...")
 response = get_completion(prompt)
-print(f"Response: {response}\n")
+log(f"Response: \n{response}\n")
 
 # 4. Understanding Prompt Engineering
-print("=== Prompt Engineering Examples ===")
+log("=== Prompt Engineering Examples ===")
 
 # Basic prompt
 basic_prompt = "Write a poem about AI."
-print("Basic prompt:")
-print(f"- Prompt: {basic_prompt}")
-print("Generating response...")
+log("Basic prompt:")
+log(f"- Prompt: {basic_prompt}")
+log("Generating response...")
 basic_response = get_completion(basic_prompt, max_length=150)
-print(f"- Response: {basic_response}\n")
+log(f"- Response: \n{basic_response}\n")
 
 # More detailed prompt with specific instructions
 detailed_prompt = """Write a short poem about artificial intelligence with the following characteristics:
@@ -83,23 +108,23 @@ detailed_prompt = """Write a short poem about artificial intelligence with the f
 - Include a metaphor comparing AI to a river
 - End with a thought-provoking question
 """
-print("Detailed prompt:")
-print(f"- Prompt: {detailed_prompt}")
-print("Generating response...")
+log("Detailed prompt:")
+log(f"- Prompt: \n{detailed_prompt}")
+log("Generating response...")
 detailed_response = get_completion(detailed_prompt, max_length=200)
-print(f"- Response: {detailed_response}\n")
+log(f"- Response: \n{detailed_response}\n")
 
 # 5. Introduction to RAG (Retrieval Augmented Generation)
-print("=== Simple RAG Example ===")
-print("Loading sentence embedding model for RAG...")
+log("=== Simple RAG Example ===")
+log("Loading sentence embedding model for RAG...")
 
 try:
     # Load a small sentence embedding model
     embedding_model = SentenceTransformer('all-MiniLM-L6-v2')
-    print("✅ Embedding model loaded successfully!")
+    log("✅ Embedding model loaded successfully!")
 except Exception as e:
-    print(f"❌ Error loading embedding model: {e}")
-    print("Continuing with simulated embeddings...")
+    log(f"❌ Error loading embedding model: {e}")
+    log("Continuing with simulated embeddings...")
     embedding_model = None
 
 # Simulated knowledge base (in a real RAG system, this would be retrieved from a vector database)
@@ -110,14 +135,14 @@ knowledge_base = {
 
 def simple_rag(query):
     """A very simple RAG implementation"""
-    print(f"Processing query: '{query}'")
+    log(f"Processing query: '{query}'")
     
     # Step 1: Determine what knowledge to retrieve
     retrieved_context = ""
     
     if embedding_model:
         # Using embeddings for more accurate semantic search
-        print("Using sentence embeddings for semantic retrieval...")
+        log("Using sentence embeddings for semantic retrieval...")
         query_embedding = embedding_model.encode(query)
         
         # Calculate similarity with each knowledge base entry
@@ -138,18 +163,18 @@ def simple_rag(query):
                 
         if best_score > 0.5:  # Threshold for relevance
             retrieved_context = f"{best_match}: {knowledge_base[best_match]}\n"
-            print(f"Found relevant information about: {best_match}")
+            log(f"Found relevant information about: {best_match}")
     else:
         # Simple keyword matching as fallback
-        print("Using keyword matching for retrieval...")
+        log("Using keyword matching for retrieval...")
         for key, value in knowledge_base.items():
             if key.lower() in query.lower():
                 retrieved_context += f"{key}: {value}\n"
-                print(f"Found keyword match: {key}")
+                log(f"Found keyword match: {key}")
     
     # Step 2: If we found relevant information, augment the prompt with it
     if retrieved_context:
-        print("Creating augmented prompt with retrieved information...")
+        log("Creating augmented prompt with retrieved information...")
         augmented_prompt = f"""Based on the following information, please answer the query.
         
         Information:
@@ -158,22 +183,22 @@ def simple_rag(query):
         Query: {query}
         """
     else:
-        print("No relevant information found. Using original query.")
+        log("No relevant information found. Using original query.")
         augmented_prompt = query
     
     # Step 3: Generate a response using the augmented prompt
-    print("Generating response with augmented context...")
+    log("Generating response with augmented context...")
     return get_completion(augmented_prompt, max_length=200)
 
 # Test our simple RAG implementation
 rag_query = "What is a MCP server and how does it relate to API integration?"
-print(f"Query: {rag_query}")
+log(f"Query: {rag_query}")
 rag_response = simple_rag(rag_query)
-print(f"RAG-augmented response: {rag_response}\n")
+log(f"RAG-augmented response: \n{rag_response}\n")
 
 # 6. Next Steps
-print("=== Next Steps ===")
-print("""
+log("=== Next Steps ===")
+log("""
 This script provided a very basic introduction to working with LLMs and a simple conceptual example of RAG. 
 To continue your learning:
 
@@ -186,11 +211,13 @@ Remember, this is just the beginning of your journey into LLMs, RAG, and MCP ser
 """)
 
 if __name__ == "__main__":
-    print("\nScript completed successfully!")
-    print("\n=== IMPORTANT NOTES ===")
-    print("1. The first run is slower as it downloads models from Hugging Face")
-    print("2. Outputs from these smaller models may not be as coherent as commercial APIs")
-    print("3. For best results, run on a computer with at least 4GB of RAM")
-    print("4. Using a GPU will significantly speed up processing time if available")
-    print("\nTo convert this to a Jupyter notebook, run:")
-    print("jupyter nbconvert --to notebook --execute intro_to_llms.py") 
+    log("\nScript completed successfully!")
+    log("\n=== IMPORTANT NOTES ===")
+    log("1. The first run is slower as it downloads models from Hugging Face")
+    log("2. Outputs from these smaller models may not be as coherent as commercial APIs")
+    log("3. For best results, run on a computer with at least 4GB of RAM")
+    log("4. Using a GPU will significantly speed up processing time if available")
+    
+    log(f"\nFull output has been saved to: {output_file}")
+    log("To convert this to a Jupyter notebook, run:")
+    log("jupyter nbconvert --to notebook --execute intro_to_llms.py") 
