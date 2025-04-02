@@ -4,6 +4,8 @@ Environment Setup Utility for RAG-MCP Pipeline Research
 
 This script helps verify and set up the necessary environment for the research project.
 It checks Python version, required packages, and provides guidance for next steps.
+
+This project uses free open-source models from Hugging Face instead of paid API services.
 """
 
 import os
@@ -69,15 +71,17 @@ def setup_virtual_environment():
 
 def install_base_packages():
     """Install base packages needed for the project."""
+    # Updated packages to use Hugging Face models instead of OpenAI
     packages = [
-        "langchain",
-        "openai",
-        "pytest",
-        "requests",
-        "jupyter",
-        "fastapi",
-        "uvicorn",
-        "python-dotenv"
+        "transformers",        # Hugging Face Transformers for LLMs
+        "torch",               # PyTorch as the backend for models
+        "sentence-transformers", # For embeddings and semantic search
+        "pytest",              # For testing
+        "requests",            # HTTP requests
+        "jupyter",             # Jupyter notebooks
+        "fastapi",             # For MCP server
+        "uvicorn",             # ASGI server for FastAPI
+        "tqdm"                 # Progress bars
     ]
     
     print("\nWould you like to install the recommended packages?")
@@ -85,11 +89,15 @@ def install_base_packages():
     for pkg in packages:
         print(f"  - {pkg}")
     
+    print("\nNOTE: These are free and open-source alternatives to paid API services.")
+    print("Models will download automatically when needed (1-2GB of disk space required).")
+    
     response = input("\nInstall packages? (y/n): ").strip().lower()
     
     if response == "y":
         cmd = [sys.executable, "-m", "pip", "install"] + packages
         try:
+            print("\nInstalling packages (this may take a few minutes)...")
             subprocess.run(cmd, check=True)
             print("✓ Base packages installed successfully.")
             
@@ -108,18 +116,51 @@ def install_base_packages():
         return True
 
 
+def verify_gpu():
+    """Check if GPU is available for faster model inference."""
+    try:
+        # First check if torch is installed
+        subprocess.run([sys.executable, "-c", "import torch"], 
+                      check=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        
+        # Then check if CUDA is available
+        result = subprocess.run(
+            [sys.executable, "-c", "import torch; print(torch.cuda.is_available())"],
+            check=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True
+        )
+        
+        has_gpu = result.stdout.strip() == "True"
+        
+        if has_gpu:
+            print("✓ GPU detected! Models will run much faster.")
+        else:
+            print("ℹ No GPU detected. Models will run on CPU (slower but still functional).")
+            
+        return True
+    except:
+        print("ℹ Could not verify GPU. Models will run on CPU.")
+        return True
+
+
 def print_next_steps():
     """Print next steps for the user."""
     print("\n=== NEXT STEPS ===")
     print("1. Activate the virtual environment")
-    print("2. Review Module 0 documentation: docs/modules/module_0/README.md")
+    print("   • Windows: venv\\Scripts\\activate")
+    print("   • macOS/Linux: source venv/bin/activate")
+    print("2. Start with Module 0:")
+    print("   • Read docs/modules/module_0/README.md")
+    print("   • Run the examples in docs/modules/module_0/")
     print("3. Complete the practical exercises in Module 0")
+    print("\nℹ The first time you run scripts with models, they will download automatically.")
+    print("  This will take some time and require 1-2GB of disk space.")
     print("\nHappy learning! 🚀")
 
 
 def main():
     """Main function to run all setup checks and procedures."""
     print("=== RAG-MCP Pipeline Research Environment Setup ===\n")
+    print("This setup uses FREE open-source models instead of paid API services\n")
     
     if not check_python_version():
         return False
@@ -132,6 +173,8 @@ def main():
     
     if not install_base_packages():
         return False
+    
+    verify_gpu()
     
     print_next_steps()
     return True
